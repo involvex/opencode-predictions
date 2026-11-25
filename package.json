@@ -4,14 +4,28 @@
   "description": "OpenCode plugin for AI next-prompt suggestions: ghost-text prompt autocomplete in OpenCode Desktop and the CLI. Press Tab to accept.",
   "type": "module",
   "license": "MIT",
-  "author": { "name": "Fernando Couto", "url": "https://github.com/fcoouto" },
+  "author": {
+    "name": "Fernando Couto",
+    "url": "https://github.com/fcoouto"
+  },
   "keywords": ["opencode-plugin", "opencode", "opencode-v2", "predictions", "autocomplete", "prompt-autocomplete", "next-prompt", "prompt-suggestions", "ghost-text", "ai", "llm", "coding-agent", "tui"],
   "homepage": "https://github.com/fcoouto/opencode-predictions#readme",
   "funding": "https://buy.stripe.com/fZu14pdh29pH4uScpifYY00",
-  "bugs": { "url": "https://github.com/fcoouto/opencode-predictions/issues" },
-  "publishConfig": { "access": "public" },
-  "repository": { "type": "git", "url": "git+https://github.com/fcoouto/opencode-predictions.git" },
-  "engines": { "node": ">=22" },
+  "bugs": {
+    "url": "https://github.com/fcoouto/opencode-predictions/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fcoouto/opencode-predictions.git"
+  },
+  "packageManager": "bun@1.4.6",
+  "engines": {
+    "bun": ">=1.4.0",
+    "node": ">=22"
+  },
   "files": ["dist", "README.md", "assets/predictions-desktop.gif", "LICENSE"],
   "exports": {
     ".": "./dist/index.js",
@@ -19,24 +33,33 @@
     "./gui-experimental": "./dist/gui-experimental.cjs",
     "./rpc": "./dist/rpc.js"
   },
-  "bin": { "opencode-predictions-pilot": "./dist/pilot.js" },
-  "scripts": {
-    "test": "node --test tests/*.test.ts",
-    "typecheck": "tsc --noEmit",
-    "bundle": "node scripts/build.mjs",
-    "pilot": "node src/pilot.ts",
-    "test:host:server": "node --test tests/host/server.test.ts",
-    "test:host:desktop": "node --test tests/host/desktop.test.ts",
-    "test:host:terminal": "node --test tests/host/terminal.test.ts",
-    "test:host:git": "node --test tests/host/git.test.ts",
-    "test:package": "node --test tests/package.test.mjs",
-    "test:installed": "node scripts/test-installed.mjs",
-    "check": "npm test && npm run typecheck && npm run bundle"
+  "bin": {
+    "opencode-predictions-pilot": "./dist/pilot.js"
   },
-  "overrides": { "gaxios": "7.3.1" },
-  "dependencies": { "@opencode/plugin": "2.2.6", "@opencode/client": "2.2.6", "jsonc-parser": "3.3.1" },
+  "scripts": {
+    "test": "bun scripts/run-tests.mjs",
+    "typecheck": "bunx tsc --noEmit",
+    "bundle": "bun scripts/build.mjs",
+    "pilot": "bun src/pilot.ts",
+    "test:host:server": "bun test tests/host/server.test.ts",
+    "test:host:desktop": "bun test tests/host/desktop.test.ts",
+    "test:host:terminal": "bun test tests/host/terminal.test.ts",
+    "test:host:git": "bun test tests/host/git.test.ts",
+    "test:package": "bun test tests/package.test.mjs",
+    "test:installed": "bun scripts/test-installed.mjs",
+    "check": "bun scripts/run-tests.mjs && bun run typecheck && bun run bundle"
+  },
+  "overrides": {
+    "gaxios": "7.3.1"
+  },
+  "dependencies": {
+    "@opencode/plugin": "2.2.6",
+    "@opencode/client": "2.2.6",
+    "jsonc-parser": "3.3.1"
+  },
   "devDependencies": {
     "@opentui/core": "0.8.4",
+    "@types/bun": "^1.4.5",
     "@types/node": "26.6.6",
     "esbuild": "0.27.0",
     "playwright": "1.65.0",

@@ -61,8 +61,11 @@ async function canonical(directory: string): Promise<{ directory: string; ancest
   }
 }
 async function safe(info: Stats, path: string, directory = false) {
-  if (process.getuid === undefined || info.uid !== process.getuid() || info.mode & 0o7022
-    || (directory ? !info.isDirectory() : !info.isFile() || info.nlink !== 1)) fail("Prediction preferences have unsafe ownership, links or write permissions.")
+  if (directory ? !info.isDirectory() : !info.isFile() || info.nlink !== 1) fail("Prediction preferences have unsafe ownership, links or write permissions.")
+  // Ownership and Unix mode bits apply only where getuid exists; Windows uses ACLs instead.
+  if (typeof process.getuid === "function" && (info.uid !== process.getuid() || info.mode & 0o7022)) {
+    fail("Prediction preferences have unsafe ownership, links or write permissions.")
+  }
   if (process.platform === "darwin") {
     const { stdout } = await run("/bin/ls", ["-lde", path], { timeout: 1000, maxBuffer: 8192 })
     if (stdout.split(/\s/, 1)[0].includes("+") || /^\s+\d+:/m.test(stdout)) fail("Prediction preferences have unsupported access control entries.")

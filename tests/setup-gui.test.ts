@@ -335,6 +335,19 @@ test("an entry's actions menu reorders within a group and keeps focus on the mov
   } finally { await page.close() }
 })
 
+test("an empty server catalog explains that no models are available while the pattern button stays usable", async () => {
+  const page = await mount({ fields: {}, catalog: [] })
+  try {
+    await idle(page)
+    await page.getByText("No models configured").waitFor()
+    assert.match(await page.getByText(/This server returned no models for the open project/).textContent() ?? "", /model pattern/)
+    assert.equal(await page.getByRole("button", { name: "Add model pattern" }).isEnabled(), true)
+    await page.getByRole("button", { name: "Add a model" }).click()
+    const add = page.getByRole("dialog", { name: "Add a model" })
+    assert.match(await add.textContent() ?? "", /connect a provider in OpenCode/i)
+  } finally { await page.close() }
+})
+
 test("Add group and the per-group Add menu open the model and pattern dialogs and add to the right place", async () => {
   const page = await mount({ fields: { models: [["local/b"]] } })
   try {

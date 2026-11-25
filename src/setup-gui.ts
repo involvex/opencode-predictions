@@ -350,7 +350,13 @@ export function registerSetupGUI(ctx: GUIContext, openStatus: () => Promise<void
               return when(() => groups().length === 0,
                 () => createComponent(ui.SettingsRow, {
                   id: "predictions-models", title: "No models configured",
-                  get description() { return column(note(() => "Add a model or a model pattern to start predicting."), explanation()) },
+                  get description() {
+                    return column(
+                      note(() => "Add a model or a model pattern to start predicting."),
+                      when(() => !(state()?.snapshot?.catalog.length), () => note(() => setupText.emptyCatalog, "status")),
+                      explanation(),
+                    )
+                  },
                   get children() { return box(button(() => "Add a model", () => addDialog("new"), { variant: "contrast", disabled: locked }), button(() => "Add model pattern", () => patternDialog("new"), { disabled: locked })) },
                 }),
                 () => createComponent(ui.SettingsRow, {

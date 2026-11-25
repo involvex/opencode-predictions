@@ -89,6 +89,19 @@ test("setup reads stored and effective fields separately and returns only safe m
   assert.deepEqual(f.counts(), { metadataCalls: 1, writes: 0 })
 })
 
+test("catalog projection tolerates missing variants instead of failing the snapshot", async () => {
+  const f = fixture()
+  const service = createSetupService(f.store, async () => [
+    { providerID: "local", id: "family/a", name: "模型 A", enabled: true } as CatalogModel,
+    { providerID: "local", id: "broken", enabled: true, variants: "nope" as any },
+  ], f.runtime)
+  const snapshot = await service.read(signal())
+  assert.deepEqual(snapshot.catalog, [
+    { providerID: "local", id: "family/a", name: "模型 A", enabled: true, variants: [] },
+    { providerID: "local", id: "broken", enabled: true, variants: [] },
+  ])
+})
+
 test("metadata preview shares earliest-group ownership while preserving distinct variants and selector rules", async () => {
   const f = fixture()
   const fields = { models: [["local/family/a#low"], ["local/family/*#low", "local/family/a", "local/other"]] }
@@ -236,7 +249,8 @@ test("GitHub PR context participates in changed-field detection and saved-not-ac
 async function preferencesServiceFixture() {
   await mkdir(".test-artifacts", { recursive: true })
   const home = await mkdtemp(resolve(".test-artifacts/preferences-service-"))
-  const store = createPreferencesStore({ home, platform: process.platform, env: {}, systemPaths: [] })
+  const configHome = join(home, ".config")
+  const store = createPreferencesStore({ home, platform: process.platform, env: { XDG_CONFIG_HOME: configHome }, systemPaths: [] })
   const calls = { session: 0, context: 0, generate: 0, pr: 0 }
   const runtime = createPreferencesRuntime(store, options => createService({
     session: async () => { calls.session++; throw new Error("Unexpected session") },
@@ -246,7 +260,7 @@ async function preferencesServiceFixture() {
     models: async () => catalog,
   }, options, "/server"))
   const setup = createSetupService(store, async () => catalog, runtime)
-  return { store, runtime, setup, calls, file: join(home, ".config/opencode/predictions.json") }
+  return { store, runtime, setup, calls, file: join(configHome, "opencode", "predictions.json") }
 }
 
 test("normal server saves preferences without source qualification", async () => {

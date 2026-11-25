@@ -1,6 +1,7 @@
 import { Plugin } from "@opencode/plugin"
 import { Predictions } from "./rpc.ts"
 import { createService, type Request } from "./service.ts"
+import { loadCatalog, type CatalogLocation } from "./catalog.ts"
 import { homedir, userInfo } from "node:os"
 import { administrativePaths, createPreferencesStore } from "./preferences-store.ts"
 import { createPreferencesRuntime } from "./preferences-runtime.ts"
@@ -19,18 +20,28 @@ export default Plugin.define({
       home: homedir(), platform: process.platform, env: { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME, APPDATA: process.env.APPDATA },
       systemPaths: administrativePaths(process.platform, process.env, username),
     })
+    const pluginLocation = (): CatalogLocation => ({
+      directory: ctx.location.directory,
+      ...(ctx.location.workspaceID ? { workspaceID: ctx.location.workspaceID } : {}),
+    })
+    const resolveLocation = (location?: { directory: string }): CatalogLocation =>
+      location?.directory ? { directory: location.directory } : pluginLocation()
+    const models = (signal: AbortSignal, location?: { directory: string }) => loadCatalog({
+      listModels: async (at, abort) => (await ctx.model.list(at ? { location: { directory: at.directory } } : undefined, { signal: abort })).data,
+      listProviders: async (at, abort) => (await ctx.provider.list(at ? { location: { directory: at.directory } } : undefined, { signal: abort })).data,
+    }, resolveLocation(location), signal)
     const runtime = createPreferencesRuntime(store, options => createService({
       session: (sessionID, signal) => ctx.session.get({ sessionID }, { signal }),
       context: (sessionID, signal) => ctx.session.context({ sessionID }, { signal }),
       contextFile: readContextFile,
       includeGithubPRContext: createGitHubContext(),
-      models: async signal => (await ctx.model.list(undefined, { signal })).data,
+      models,
       generate: async (model, prompt, signal) => (await ctx.experimental.generate.text({ model, prompt }, { signal })).text,
       notice: async (message, request, notice) => { if (request.requestID) await registration.events.emit("progress", { message, requestID: request.requestID, sessionID: request.sessionID, ...(notice ? { notice } : {}) }) },
       progress: async (modelName, request) => { if (request.requestID) await registration.events.emit("progress", { message: "", modelName, requestID: request.requestID, sessionID: request.sessionID }) },
     }, options, ctx.location.directory))
     await runtime.refresh(lifetime.signal)
-    const setup = createSetupService(store, async signal => (await ctx.model.list(undefined, { signal })).data, runtime)
+    const setup = createSetupService(store, signal => models(signal, pluginLocation()), runtime)
     const signal = (parent: AbortSignal) => AbortSignal.any([parent, lifetime.signal])
     const registration = await ctx.rpc.register(Predictions, {
       predict: (input, context) => runtime.predict(input as Request, signal(context.signal)),

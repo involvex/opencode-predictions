@@ -85,7 +85,6 @@ var Predictions = Rpc.define({
       input: { type: "object", additionalProperties: false },
       output: { type: "object" }
     },
-    // Old Setup clients interpret reset as inheritance. Do not serve them a writable snapshot.
     settingsV2: {
       input: { type: "object", additionalProperties: false },
       output: {
@@ -110,7 +109,6 @@ var Predictions = Rpc.define({
       }
     },
     saveSettings: {
-      // Preserve unknown keys at both levels for explicit rejection by the server.
       input: {
         type: "object",
         properties: {
@@ -132,7 +130,6 @@ var Predictions = Rpc.define({
       }
     },
     previewSettings: {
-      // Preserve unknown nested keys so server validation can reject them instead of decoder stripping.
       input: { type: "object", properties: { fields: { ...settingsFields, additionalProperties: true } }, required: ["fields"], additionalProperties: false },
       output: {
         type: "object",
@@ -154,4 +151,5 @@ var Predictions = Rpc.define({
 export {
   Predictions
 };
-//# sourceMappingURL=rpc.js.map
+
+//# debugId=A5E5A34E3104586864756E2164756E21

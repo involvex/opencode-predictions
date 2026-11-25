@@ -2,6 +2,7 @@ import type { PreferencesStore } from "./preferences-store.ts"
 import type { PreferencesRuntime } from "./preferences-runtime.ts"
 import { applyPreferenceChange, resolvePreferences } from "./preferences.ts"
 import { isDeepStrictEqual } from "node:util"
+import { projectCatalog } from "./catalog.ts"
 import { resolveModels, resolveModelGroups, type CatalogModel, type Candidate } from "./models.ts"
 import { parseOptions } from "./options.ts"
 import { abortable } from "./service.ts"
@@ -38,10 +39,7 @@ function resolve(fields: SettingsInput, catalog: readonly CatalogModel[]): Setup
 export function createSetupService(store: PreferencesStore, models: (signal: AbortSignal) => Promise<readonly CatalogModel[]>, runtime: PreferencesRuntime) {
   async function catalog(signal: AbortSignal): Promise<CatalogModel[]> {
     try {
-      return (await abortable(() => models(signal), signal)).map(model => ({
-        providerID: model.providerID, id: model.id, ...(model.name === undefined ? {} : { name: model.name }),
-        enabled: model.enabled, variants: model.variants.map(variant => ({ id: variant.id })),
-      }))
+      return projectCatalog(await abortable(() => models(signal), signal))
     } catch {
       signal.throwIfAborted()
       throw new Error("Model metadata is unavailable.")

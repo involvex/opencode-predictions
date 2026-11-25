@@ -12,7 +12,7 @@ export type ServiceAPI = {
   context(id: string, signal: AbortSignal): Promise<readonly unknown[]>
   contextFile?(path: string, signal: AbortSignal): Promise<string>
   includeGithubPRContext?(sessionID: string, prompt: string, signal: AbortSignal): Promise<readonly LinkedPR[]>
-  models(signal: AbortSignal): Promise<readonly CatalogModel[]>
+  models(signal: AbortSignal, location?: { directory: string }): Promise<readonly CatalogModel[]>
   generate(model: ModelRef, prompt: string, signal: AbortSignal): Promise<string>
   notice?(message: string, request: Request, notice?: Notice): void | Promise<void>
   progress?(modelName: string, request: Request): void | Promise<void>
@@ -205,7 +205,7 @@ export function createService(api: ServiceAPI, rawOptions: unknown, directory: s
         const session = await abortable(() => api.session(request.sessionID, parent), parent)
         const reason = check(session)
         if (reason) return { reason }
-        refresh(await abortable(() => api.models(parent), parent))
+        refresh(await abortable(() => api.models(parent, session.location), parent))
         configured = groups!.flat()
         if (!configured.length) return { reason: "model_unavailable" }
         parent.throwIfAborted()
@@ -366,7 +366,7 @@ export function createService(api: ServiceAPI, rawOptions: unknown, directory: s
   const inspect = async (signal: AbortSignal): Promise<Status> => {
     signal = AbortSignal.any([signal, lifetime.signal])
     signal.throwIfAborted()
-    if (options?.enabled && options.models) refresh(await abortable(() => api.models(signal), signal))
+    if (options?.enabled && options.models) refresh(await abortable(() => api.models(signal, { directory }), signal))
     return status()
   }
   return { predict, status, inspect, dispose() { lifetime.abort(); offers.clear(); cycles.clear() } }
