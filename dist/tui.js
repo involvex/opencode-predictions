@@ -412,7 +412,7 @@ function resolveModels(selectors, catalog) {
 // package.json
 var package_default = {
   name: "opencode-predictions",
-  version: "0.4.4",
+  version: "0.4.5",
   description: "OpenCode plugin for AI next-prompt suggestions: ghost-text prompt autocomplete in OpenCode Desktop and the CLI. Press Tab to accept.",
   type: "module",
   license: "MIT",
@@ -2479,4 +2479,4 @@ export {
   tui_default as default
 };
 
-//# debugId=BB18C81A31EB077364756E2164756E21
+//# debugId=3C808FC98FF4E29064756E2164756E21
