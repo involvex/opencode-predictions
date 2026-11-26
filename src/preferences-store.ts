@@ -156,7 +156,8 @@ export function createPreferencesStore(host: PreferencesHost) {
           const backup = before.source + ".backup"
           if (await exists(backup)) {
             const info = await lstat(backup); await safe(info, backup)
-            if (info.mode & 0o177) fail("The prediction preferences backup has unsafe permissions.")
+            // World/group write bits are a Unix TOCTOU concern; Windows reports ACL-writable files as 0o666.
+            if (typeof process.getuid === "function" && (info.mode & 0o177)) fail("The prediction preferences backup has unsafe permissions.")
           }
           const copy = await stage(before.bytes, 0o600)
           await rename(copy, backup)

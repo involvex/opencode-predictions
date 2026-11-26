@@ -1628,7 +1628,7 @@ function createPreferencesStore(host) {
           if (await exists(backup)) {
             const info = await lstat(backup);
             await safe(info, backup);
-            if (info.mode & 127)
+            if (typeof process.getuid === "function" && info.mode & 127)
               fail("The prediction preferences backup has unsafe permissions.");
           }
           const copy = await stage(before.bytes, 384);
@@ -2036,4 +2036,4 @@ export {
   src_default as default
 };
 
-//# debugId=66754619A79DD0DF64756E2164756E21
+//# debugId=E6F54000058FB25064756E2164756E21

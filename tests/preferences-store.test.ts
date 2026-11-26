@@ -50,17 +50,17 @@ test("administrative discovery uses ProgramData on Windows and fails closed when
   }
 })
 
-test("missing preferences preserve legacy activation when ownership verification is unsupported", async () => {
+test("missing preferences stay writable when ownership verification is unsupported", async () => {
   const f = await fixture()
   const getuid = process.getuid
   try {
     process.getuid = undefined as any
     const state = await f.store.read(signal())
     assert.equal(state.documentValid, true, "verified absence is not an unreadable preference document")
-    assert.equal(state.writable, false)
+    assert.equal(state.writable, true)
     assert.deepEqual(state.overrides, {})
-    assert.equal((await f.store.write(state.revision, { fields: { debug: true } }, signal())).kind, "read_only")
-    assert.deepEqual(await readdir(f.home), [])
+    assert.equal((await f.store.write(state.revision, { fields: { debug: true } }, signal())).kind, "written")
+    assert.deepEqual(JSON.parse(await readFile(f.file, "utf8")).settings, { debug: true })
   } finally { process.getuid = getuid }
 })
 
@@ -77,7 +77,7 @@ test("read does not create preferences; first save writes only changed fields wi
   assert.deepEqual(await readdir(f.home), [])
   assert.equal((await f.store.write(before.revision, { fields: { automatic: false } }, signal())).kind, "written")
   assert.deepEqual(JSON.parse(await readFile(f.file, "utf8")), { version: 1, settings: { automatic: false } })
-  assert.equal((await stat(f.file)).mode & 0o777, 0o600)
+  if (typeof process.getuid === "function") assert.equal((await stat(f.file)).mode & 0o777, 0o600)
   assert.deepEqual(await readdir(join(f.home, "config", "opencode")), ["predictions.json"])
 })
 
@@ -90,8 +90,26 @@ test("already committed revisions reject stale drafts and preserve unrelated Ope
   assert.equal((await f.store.write(before.revision, { fields: { debug: true } }, signal())).kind, "written")
   assert.equal((await f.store.write(before.revision, { fields: { contextTurns: 5 } }, signal())).kind, "conflict")
   assert.deepEqual(await readFile(f.file + ".backup"), bytes)
-  assert.equal((await stat(f.file + ".backup")).mode & 0o777, 0o600)
+  if (typeof process.getuid === "function") assert.equal((await stat(f.file + ".backup")).mode & 0o777, 0o600)
   assert.equal(await readFile(unrelated, "utf8"), text)
+})
+
+test("repeated saves tolerate ACL-mapped backup modes when Unix checks are unavailable", async () => {
+  const f = await fixture()
+  await f.put({ automatic: false })
+  let before = await f.store.read(signal())
+  assert.equal((await f.store.write(before.revision, { fields: { debug: true } }, signal())).kind, "written")
+  await chmod(f.file + ".backup", 0o666)
+  await chmod(f.file, 0o666)
+  const getuid = process.getuid
+  try {
+    process.getuid = undefined as any
+    before = await f.store.read(signal())
+    assert.equal(before.writable, true)
+    const result = await f.store.write(before.revision, { fields: { contextTurns: 3 } }, signal())
+    assert.equal(result.kind, "written", "message" in result ? result.message : "")
+  } finally { process.getuid = getuid }
+  assert.deepEqual(JSON.parse(await readFile(f.file, "utf8")).settings, { automatic: false, debug: true, contextTurns: 3 })
 })
 
 test("unknown members survive reset and no-model suppression is distinct from reset", async () => {

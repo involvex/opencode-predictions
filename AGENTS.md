@@ -30,10 +30,12 @@
 - `model.list` is location-scoped and may be empty before providers settle; Setup falls back to provider inventories when present
 - Desktop settings are writable only after the sidecar location is known
 - Host native tests need OpenCode Desktop/CLI; CI `check` does not run them
+- On Windows, preference/backup files report mode `0o666`; Unix `0o177` / ownership checks must stay behind `process.getuid`, or Save fails with “backup has unsafe permissions”
+- Do not run the host suite on Windows without cleaning up leftover `opencode serve` children (they exhaust RAM)
 
 ## Current work
 
-- Bun toolchain + location-aware model catalog for Predictions Setup
+- Windows preference Save (ACL-mapped backup modes) + Bun toolchain / location-aware catalog
 
 ## Learned preferences
 
